@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: controller
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1" 
 spec:
   dependsOn:
     - crds
@@ -16,8 +18,3 @@ spec:
   project: default
   syncPolicy:
     automated: {}
-  ignoreDifferences:
-    - group: "argoproj.io"
-      kind: "Application"
-      jsonPointers:
-        - /spec/dependsOn

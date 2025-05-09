@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: webapps
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2" 
 spec:
   dependsOn:
     - controller
@@ -23,7 +25,3 @@ spec:
       kind: "webapps"
       jsonPointers:
         - /metadata/annotations
-    - group: "argoproj.io"
-      kind: "Application"
-      jsonPointers:
-        - /spec/dependsOn
