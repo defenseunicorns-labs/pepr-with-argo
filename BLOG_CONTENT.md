@@ -19,8 +19,17 @@ Since we our GitOps tooling is is focused on high level abstracts of our app, we
 1. Install ArgoCD in your cluster. You can follow the [official documentation](https://argo-cd.readthedocs.io/en/stable/getting_started/) for installation instructions.
 
 ```bash
+k3d cluster delete --all
+k3d cluster create; 
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+kubectl -n argocd patch configmap argocd-cm --type merge -p '{
+  "data": {
+    "resource.customizations.health.apiextensions.k8s.io_CustomResourceDefinition": "hs = {}\nif obj.status ~= nil and obj.status.conditions ~= nil then\n  for _, condition in ipairs(obj.status.conditions) do\n    if condition.type == \"Established\" and condition.status == \"True\" then\n      hs.status = \"Healthy\"\n      hs.message = \"CRD is established\"\n      return hs\n    end\n  end\nend\nhs.status = \"Progressing\"\nhs.message = \"Waiting for CRD to be established\"\nreturn hs"
+  }
+}'
+k rollout restart deployment -n argocd
 ```
 
 2. Port-forward the argocd-server service to access the ArgoCD UI.
