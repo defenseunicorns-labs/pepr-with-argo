@@ -20,6 +20,6 @@ spec:
       - CreateNamespace=true 
   ignoreDifferences:
     - group: "application.pepr.dev"
-      kind: "webapps"
+      kind: "WebApps"
       jsonPointers:
         - /metadata/annotations

@@ -96,7 +96,71 @@ k get pods -n webapps
 
 Lets update that resource to have 5 replicas instead of 1 by editing the file `k8s/webapps/english-light.yaml` and changing the replicas from 1 to 5 and change theme to `dark`. Then, check in your changes to git. 
 
+Give the ArgoCD server a few minutes to reconcile the changes. You can see the status of the application in the ArgoCD UI. You could manually sync the application by clicking the `Sync` button in the UI but it will eventually reconcile on its own. 
 
+```bash
+> k get po -n webapps 
+NAME                            READY   STATUS    RESTARTS   AGE
+english-light-9c5985d8c-hn4qh   1/1     Running   0          2m27s
+english-light-9c5985d8c-nfds9   1/1     Running   0          2m27s
+english-light-9c5985d8c-nrfbs   1/1     Running   0          2m27s
+english-light-9c5985d8c-z8lhq   1/1     Running   0          2m26s
+english-light-9c5985d8c-zjp69   1/1     Running   0          2m26s
+spanish-dark-5b5d5f8849-ttnq4   1/1     Running   0          13m
+```
+
+If we describe the `english-light` webapp we can see the operator has reconciled the changes again.
+
+```bash
+Events:
+  Type    Reason                    Age    From           Message
+  ----    ------                    ----   ----           -------
+  Normal  InstanceCreatedOrUpdated  14m    english-light  Pending
+  Normal  InstanceCreatedOrUpdated  14m    english-light  Reconciled
+  Normal  InstanceCreatedOrUpdated  2m59s  english-light  Pending
+  Normal  InstanceCreatedOrUpdated  2m59s  english-light  Reconciled
+```
+
+The Pods that the operator is deploying are going through admission control, and the MutatingWebhook is mutating the resources to assign a container security contenxt of `allowPrivilegeEscalation: false`.
+
+```yaml
+> kubectl get pod -n webapps -l pepr.dev/operator=spanish-dark -o jsonpath="{.items[0].spec.containers[*].securityContext}"
+{"allowPrivilegeEscalation":false}
+```
+
+If we try to deploy a pod running with privileged mode, the admission controller will reject the request. 
+
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: testing123
+  name: testing123
+spec:
+  containers:
+  - image: nginx
+    name: testing123
+    resources: {}
+    securityContext:
+      allowPrivilegeEscalation: true
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+EOF
+Error from server: error when creating "STDIN": admission webhook "pepr-pepr-with-argo.pepr.dev" denied the request: Privilege escalation is disallowed
+```
+
+
+## Conclusion
+
+
+In summary, we have shown how to harmonize Kubernetes Admission Controllers and Operators with GitOps workflows. By clearly defining the roles of each component, we can create a cloud-native architecture that is secure, automated, and declarative by delegating the responsibilities to the appropriate components.
+
+
+```bash
 Quick Cleanup:
 ```bash
 k delete -f k8s/app-of-apps.yaml   
