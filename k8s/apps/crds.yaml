@@ -12,7 +12,7 @@ spec:
     path: k8s/crds
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: ""
   project: default
   syncPolicy:
     automated: {}

@@ -49,5 +49,8 @@ k delete ns webapps
 k delete applications -n argocd --all
 k delete crd webapps.application.pepr.dev 
 
+kubectl -n argocd rollout restart deployment argocd-repo-server
+kubectl -n argocd rollout restart deployment argocd-application-controller
+
 k apply -f k8s/app-of-apps.yaml 
 ```
