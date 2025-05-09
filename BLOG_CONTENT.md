@@ -47,6 +47,55 @@ kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.pass
 4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step.
 
 
+## Deploy the App of Apps
+
+The App of Apps pattern is a way to manage multiple applications in ArgoCD. It allows you to define a parent application that contains multiple child applications which can be deployed in a given order.
+
+We are going to deploy the CRD for the WebApp Operator, then the Operator, then the instances of the WebApp. The Operator will manage the lifecycle of the WebApp instances and the admission controller will enforce policies on the resources created by the Operator.
+
+```bash
+kubectl apply -f k8s/app-of-apps.yaml 
+```
+
+Notice the applications are now in sync in the UI. 
+
+Lets look at the english-light WebApp instance. 
+
+```bash
+k get wa english-light -n webapps -oyaml
+```
+
+
+```yaml
+status:
+  conditions:
+  - lastTransitionTime: "2025-05-09T20:14:50.121Z"
+    observedGeneration: 1
+    reason: Processing
+    status: Pending
+  - lastTransitionTime: "2025-05-09T20:14:50.142Z"
+    observedGeneration: 1
+    reason: Reconciled
+    status: Ready
+```
+
+
+We can see from the `status.conditions` that it was `Pending` and then `Ready`. This means the Operator created the resources and the admission controller enforced the policies. Similarly you could look at the events by describing the resource.
+
+First, let's see how the webapp works.
+
+```bash
+kubectl port-forward svc/english-light -n webapps 8080:80
+```
+
+Then open a browser and go to `http://localhost:8080`. You should see the webapp running see a white background with english text. If we look at the pods we see there is a single replica.
+
+```bash
+k get pods -n webapps
+```
+
+Lets update that resource to have 5 replicas instead of 1 by editing the file `k8s/webapps/english-light.yaml` and changing the replicas from 1 to 5 and change theme to `dark`. Then, check in your changes to git. 
+
 
 Quick Cleanup:
 ```bash
