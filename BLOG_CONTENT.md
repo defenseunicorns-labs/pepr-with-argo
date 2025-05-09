@@ -42,8 +42,12 @@ kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.pass
 Quick Cleanup:
 ```bash
 k delete -f k8s/app-of-apps.yaml   
-k delete -f k8s/controller
+k delete po -n pepr-system --all --force && k delete -f k8s/controller
 k delete -f k8s/webapps 
 k delete -f k8s/crds
 k delete ns webapps 
+k delete applications -n argocd --all
+k delete crd webapps.application.pepr.dev 
+
+k apply -f k8s/app-of-apps.yaml 
 ```

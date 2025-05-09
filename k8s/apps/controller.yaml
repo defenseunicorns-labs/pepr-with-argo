@@ -6,8 +6,6 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1" 
 spec:
-  dependsOn:
-    - crds
   source:
     repoURL: https://github.com/cmwylie19/pepr-with-argo
     targetRevision: HEAD
