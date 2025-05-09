@@ -116,8 +116,8 @@ metadata:
   name: a
   namespace: default
 spec:
-  language: spanish
+  language: english
   replicas: 1
-  theme: light
+  theme: dark
 EOF
 ```

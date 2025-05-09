@@ -14,3 +14,26 @@ Since we our GitOps tooling is is focused on high level abstracts of our app, we
 - **Role of Admission Controller**: Enforce policies and security controls at the cluster level, ensuring that only compliant resources are deployed. Keep configuration simple and consistent across resources. This is the security piece.
 - **Role of GitOps**: Provide a single source of truth for your application and infrastructure, allowing you to manage the entire lifecycle of your application from development to production. This is the declarative piece.
 
+## Setup ArgoCD
+
+1. Install ArgoCD in your cluster. You can follow the [official documentation](https://argo-cd.readthedocs.io/en/stable/getting_started/) for installation instructions.
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+2. Port-forward the argocd-server service to access the ArgoCD UI.
+
+```bash
+kubectl port-forward svc/argocd-server -n argocd 3333:80 
+```
+
+3. Get the initial admin password.
+
+```bash
+kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.password}" | base64 -d | pbcopy
+```
+
+4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step.
+

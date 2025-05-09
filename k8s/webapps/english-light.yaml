@@ -1,0 +1,9 @@
+kind: WebApp
+apiVersion: application.pepr.dev/v1alpha1
+metadata:
+  name: english-light
+  namespace: webapps
+spec:
+  language: english
+  replicas: 1
+  theme: light

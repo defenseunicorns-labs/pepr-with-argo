@@ -1,0 +1,9 @@
+kind: WebApp
+apiVersion: application.pepr.dev/v1alpha1
+metadata:
+  name: spanish-dark
+  namespace: webapps
+spec:
+  language: spanish
+  replicas: 1
+  theme: dark

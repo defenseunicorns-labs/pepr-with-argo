@@ -226,7 +226,7 @@ async function updateStatus(instance: WebApp, status: Status) {
       status,
     });
   } catch (err) {
-    Log.error(`Failed to update status for ${instance.metadata?.name}: ${err}`);
+    Log.error(`Failed to update status for ${instance.metadata?.name}: ${JSON.stringify(err)}`);
   }
 }
 

@@ -16,6 +16,24 @@
     "uuid": "pepr-with-argo",
     "onError": "reject",
     "webhookTimeout": 10,
+    "rbac": [
+      {
+        "apiGroups": ["application.pepr.dev"], 
+        "resources": ["webapps","webapps/status"], 
+        "verbs": ["patch"]
+      }, 
+      {
+        "apiGroups": ["apps"],
+        "resources": ["deployments","deployments/status"],
+        "verbs": ["create","patch"]
+      },
+      {
+        "apiGroups": [""],
+        "resources": ["services","services/status","configmaps","configmaps/status","events"],
+        "verbs": ["create","patch"]
+      }
+    ],
+    "rbacMode": "scoped",
     "customLabels": {
       "namespace": {
         "pepr.dev": ""
