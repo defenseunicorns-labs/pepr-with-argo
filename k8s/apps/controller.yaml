@@ -16,3 +16,8 @@ spec:
   project: default
   syncPolicy:
     automated: {}
+  ignoreDifferences:
+    - group: "argoproj.io"
+      kind: "Application"
+      jsonPointers:
+        - /spec/dependsOn
