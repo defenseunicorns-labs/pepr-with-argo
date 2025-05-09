@@ -15,7 +15,9 @@ spec:
     namespace: ""
   project: default
   syncPolicy:
-    automated: {}
+    automated: 
+      prune: true
+      selfHeal: true
     retry:
       limit: 10                 
       backoff:
