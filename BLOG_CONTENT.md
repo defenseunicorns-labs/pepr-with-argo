@@ -37,3 +37,13 @@ kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.pass
 
 4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step.
 
+
+
+Quick Cleanup:
+```bash
+k delete -f k8s/app-of-apps.yaml   
+k delete -f k8s/controller
+k delete -f k8s/webapps 
+k delete -f k8s/crds
+k delete ns webapps 
+```
