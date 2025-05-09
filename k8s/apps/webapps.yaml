@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: webapps
+  namespace: argocd
+spec:
+  dependsOn:
+    - controller
+  source:
+    repoURL: https://github.com/cmwylie19/pepr-with-argo
+    targetRevision: HEAD
+    path: k8s/webapps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: webapps
+  project: default
+  syncPolicy:
+    automated: {}
+  ignoreDifferences:
+    - group: "application.pepr.dev"
+      kind: "webapps"
+      jsonPointers:
+        - /metadata/annotations

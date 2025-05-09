@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crds
+  namespace: argocd
+spec:
+  source:
+    repoURL: https://github.com/cmwylie19/pepr-with-argo
+    targetRevision: HEAD
+    path: k8s/crds
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  project: default
+  syncPolicy:
+    automated: {}
