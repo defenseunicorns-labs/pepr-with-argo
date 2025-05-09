@@ -16,6 +16,8 @@ spec:
   project: default
   syncPolicy:
     automated: {}
+    syncOptions:
+      - CreateNamespace=true 
   ignoreDifferences:
     - group: "application.pepr.dev"
       kind: "webapps"
