@@ -44,7 +44,7 @@ kubectl port-forward svc/argocd-server -n argocd 3333:80
 kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.password}" | base64 -d | pbcopy
 ```
 
-4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step.
+4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step. Click advanced and sign in. (Insecure certificate warning)
 
 
 ## Deploy the App of Apps
