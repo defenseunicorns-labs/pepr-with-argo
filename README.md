@@ -59,12 +59,12 @@ You will need to fork this repo and clone it to your local machine. Also, search
 
 ## The Operator
 
-The role of the operator is watch for the WebApp CR, look at the status to see if it is `Pending` or `Ready`, if it is pending, it will pass through admission leave the resource alone as the underlying resources are being deployed, once the underlying resources are deployed the operator will patch the status to be `Ready`. If a WebApp resource is in a `Ready` state, and the observed generation is less than the generation, the operator will update the status to `Pending` and then deploy the underlying resources. The operator will also watch for changes to the CR and update the resources accordingly. see [capability/index.ts](./capabilities/index.ts) for the code that does this.
+The role of the operator is watch for the WebApp CR, look at the status to see if it is `Pending` or `Ready`, if it is pending, it will pass through admission leave the resource alone as the underlying resources are being deployed, once the underlying resources are deployed the operator will patch the status to be `Ready`. If a WebApp resource is in a `Ready` state, and the observed generation is less than the generation, the operator will update the status to `Pending` and then deploy the underlying resources. The operator will also watch for changes to the CR and update the resources accordingly. see [capabilities/index.ts](./capabilities/index.ts) for the code that does this.
 
 
 ## The Admission Controller
 
-The role of the admission controller is to enforce policies and security controls at the cluster level, ensuring that only compliant resources are deployed and validate the shape of the WebApp CR. If the WebApp CR does not meet the correct criteria, it will be denied admission to the cluster. See [admission/index.ts](./admission/index.ts) for the code that does this.
+The role of the admission controller is to enforce policies and security controls at the cluster level, ensuring that only compliant resources are deployed and validate the shape of the WebApp CR. If the WebApp CR does not meet the correct criteria, it will be denied admission to the cluster. See [capabilities/index.ts](./capabilities/index.ts) for the code that does this.
 
 ## The GitOps Server
 
