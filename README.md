@@ -118,7 +118,7 @@ kubectl port-forward svc/argocd-server -n argocd 3333:80
 kubectl get secret argocd-initial-admin-secret -n argocd -ojsonpath="{.data.password}" | base64 -d | pbcopy
 ```
 
-4. Signin  to the ArgoCD UI at `http://localhost:3333` using the username `admin` and the password you copied in the previous step. Click advanced and sign in. (Insecure certificate warning)
+4. Signin  to the ArgoCD UI at [http://localhost:3333](http://localhost:3333) using the username `admin` and the password you copied in the previous step. Click advanced and sign in. (Insecure certificate warning)
 
 
 ### Deploy the App of Apps
@@ -192,7 +192,7 @@ First, let's see how the webapp works.
 kubectl port-forward svc/english-light -n webapps 8080:80
 ```
 
-Then open a browser and go to `http://localhost:8080`. You should see the webapp running see a white background with english text. If we look at the pods we see there is a single replica.
+Then open a browser and go to [http://localhost:8080](http://localhost:8080). You should see the webapp running see a white background with english text. If we look at the pods we see there is a single replica.
 
 ```bash
 kubectl get pods -n webapps

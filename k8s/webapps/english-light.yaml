@@ -6,4 +6,4 @@ metadata:
 spec:
   language: english
   replicas: 1
-  theme: dark
+  theme: light
