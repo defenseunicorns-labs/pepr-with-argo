@@ -52,14 +52,14 @@ This blog has 3 major concepts:
 2. **Admission Controllers**: A Kubernetes feature that intercepts requests to the API server and can modify or reject them based on defined policies.
 3. **Operators**: A method of packaging, deploying, and managing a Kubernetes application using custom resources and controllers.
 
-We will use an operator written with Pepr that allows us to deploy WebApps through a single CR and the controller automates the deployment of the underlying resources ensuring everything is deployed in the same manner each time. The Admission Controller will add sane securityContexts to all pods that come into the cluster and validate that no pods are running with escalted privilege. We will use ArgoCD to manage the deployment and ordering of deployment of our webapp instances.
+We will use an operator written with Pepr that allows us to deploy WebApps through a single CR and the controller automates the deployment of the underlying resources ensuring everything is deployed in the same manner each time. The Admission Controller will add sane securityContexts to all pods that come into the cluster and validate that no pods are running with escalated privilege. We will use ArgoCD to manage the deployment and ordering of deployment of our webapp instances.
 
 
 You will need to fork this repo and clone it to your local machine. Also, search for all instances of `https://github.com/cmwylie19` and replace it with your own repo. 
 
 ## The Operator
 
-The role of the operator is watch for the WebApp CR, look at the status to see if it is `Pending` or `Ready`, if it is pending, it will pass through admission leave the resource alone as the underlying resources are being deployed, once the underlying resources are deployed the operator will patch the status to be `Ready`. If a WebApp resource is in a `Ready` state, and the observed generation is less than the generation, the operator will update the status to `Pending` and then deploy the underlying resources. The operator will also watch for changes to the CR and update the resources accordingly. The operator will also watch for changes to the resources and update the CR status accordingly. see [capability/index.ts](./capabilities/index.ts) for the code that does this.
+The role of the operator is watch for the WebApp CR, look at the status to see if it is `Pending` or `Ready`, if it is pending, it will pass through admission leave the resource alone as the underlying resources are being deployed, once the underlying resources are deployed the operator will patch the status to be `Ready`. If a WebApp resource is in a `Ready` state, and the observed generation is less than the generation, the operator will update the status to `Pending` and then deploy the underlying resources. The operator will also watch for changes to the CR and update the resources accordingly. see [capability/index.ts](./capabilities/index.ts) for the code that does this.
 
 
 ## The Admission Controller
@@ -68,7 +68,7 @@ The role of the admission controller is to enforce policies and security control
 
 ## The GitOps Server
 
-The role of the GitOps server is to to a declarative, ordered, deployment of our entire stack. We will achieve this by using the App of Apps pattern. The App of Apps pattern is a way to manage multiple applications in ArgoCD. It allows you to define a parent application that contains multiple child applications which can be deployed in a given order. Since our Operator will be patching the status of the WebApp CR, we do not have to worry about the admission controller and GitOps server fighting over the same resources. We will clearly define the boundaries of the GitOps server and when it should reconcile. However, our admission controller will be creating annotations on the WebApp CR to indicate that it has been processed. To ensure we do not get into a circular reconciliation loop, we will use `ignoreDifferences` in the ArgoCD application spec to ignore the annotations added by the admission controller. This will allow the GitOps server to reconcile the WebApp CR without being affected by the admission controller.
+The role of the GitOps server is to provide a declarative, ordered, deployment of our entire stack. We will achieve this by using the App of Apps pattern. The App of Apps pattern is a way to manage multiple applications in ArgoCD. It allows you to define a parent application that contains multiple child applications which can be deployed in a given order. Since our Operator will be patching the status of the WebApp CR, we do not have to worry about the admission controller and GitOps server fighting over the same resources as Argo will ignore differences in status. We will clearly define the boundaries of the GitOps server and when it should reconcile. However, our admission controller will be creating annotations on the WebApp CR to indicate that it has been processed. To ensure we do not get into a circular reconciliation loop, we will use `ignoreDifferences` in the ArgoCD application spec to ignore the annotations added by the admission controller. This will allow the GitOps server to reconcile the WebApp CR without being affected by the admission controller.
 
 
 ```yaml
@@ -195,7 +195,7 @@ kubectl port-forward svc/english-light -n webapps 8080:80
 Then open a browser and go to `http://localhost:8080`. You should see the webapp running see a white background with english text. If we look at the pods we see there is a single replica.
 
 ```bash
-k get pods -n webapps
+kubectl get pods -n webapps
 ```
 
 
