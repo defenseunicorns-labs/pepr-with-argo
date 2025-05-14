@@ -57,11 +57,189 @@ We will use a Pepr operator for simplified, consistent WebApp deployment via a s
 
 The role of the operator is to watch for the WebApp's CustomResource, look at the status to see if it is `Pending` or `Ready`. If it is `Pending`, it will pass through admission, leave the resource alone as the underlying resources are being deployed, once the underlying resources are deployed the operator will patch the status to be `Ready`. If a WebApp resource is in a `Ready` state, and the observed generation is less than the generation, the operator will update the status to `Pending`, and then deploy the underlying resources. The operator will also watch for changes to the CR and update the resources accordingly. See [capabilities/index.ts](./capabilities/index.ts) for the relevant code.
 
+**WebApp Reconciler**
+```ts
+  .Reconcile(async instance => {
+    // Kubernetes will change the generation of the instance when the spec changes
+    const generation = instance.metadata?.generation;
+    // The observedGeneration is the generation of the instance that was last processed
+    const observedGeneration =
+      instance.status?.conditions?.[instance.status?.conditions.length - 1].observedGeneration;
+
+    // check if the instance is already being processed
+    const latestCondition = instance.status?.conditions[instance.status?.conditions.length - 1] || {
+      status: "",
+      reason: "",
+    };
+    const isPending =
+      latestCondition.status === "Pending" || latestCondition.reason === "Processing";
+
+    // We should deploy is something in the spec changes and it is not already being processed
+    const shouldDeploy = generation !== observedGeneration && !isPending;
+
+    if (!shouldDeploy) {
+      Log.debug(
+        `Skipping reconcile for ${instance.metadata?.name}, generation has not changed or is pending.`,
+      );
+      return;
+    }
+
+    // Mark as Pending for while underlying resources are being deployed
+    const conditions = getConditions(instance);
+    conditions.push({
+      observedGeneration: generation,
+      lastTransitionTime: new Date(),
+      reason: "Processing",
+      status: "Pending",
+    });
+    // Update status to Pending
+    await updateStatus(instance, { conditions });
+
+    // Write event to indicate that the instance is being processed
+    await writeEvent(
+      instance,
+      { message: "Pending" },
+      {
+        eventType: "Normal",
+        eventReason: "InstanceCreatedOrUpdated",
+        reportingComponent: instance.metadata.name,
+        reportingInstance: instance.metadata.name,
+      },
+    );
+
+    try {
+      // Deploy underlying resources
+      await Deploy(instance);
+
+      // Update status to Ready
+      conditions.push({
+        observedGeneration: generation,
+        lastTransitionTime: new Date(),
+        reason: "Reconciled",
+        status: "Ready",
+      });
+
+      // Update status to Ready
+      await updateStatus(instance, { conditions });
+
+      // Write event to indicate that the instance is ready
+      await writeEvent(
+        instance,
+        { message: "Reconciled" },
+        {
+          eventType: "Normal",
+          eventReason: "InstanceCreatedOrUpdated",
+          reportingComponent: instance.metadata.name,
+          reportingInstance: instance.metadata.name,
+        },
+      );
+    } catch (err) {
+      Log.error(`Deployment failed for ${instance.metadata?.name}: ${err}`);
+
+      // Mark status as failed
+      conditions.push({
+        observedGeneration:
+          instance.status?.conditions?.[instance.status?.conditions?.length].observedGeneration,
+        lastTransitionTime: new Date(),
+        reason: "Could not reconcile",
+        status: "Failed",
+      });
+
+      // Update status to Failed
+      await updateStatus(instance, instance.status);
+
+      // Write event to indicate that the instance failed
+      await writeEvent(
+        instance,
+        { message: "Failed" },
+        {
+          eventType: "Normal",
+          eventReason: "InstanceCreatedOrUpdated",
+          reportingComponent: instance.metadata.name,
+          reportingInstance: instance.metadata.name,
+        },
+      );
+    }
+  });
+```
 
 ## The Admission Controller
 
 The role of the admission controller is to enforce policies and security controls at the cluster level, ensuring that only compliant resources are deployed and validate the shape of the WebApp's CustomResource (CR). If the WebApp CR does not meet the correct criteria, it will be denied admission to the cluster. See [capabilities/index.ts](./capabilities/index.ts) for the code that does this.
 
+**WebApp CR Admission Control** 
+```ts
+When(WebApp)
+  .IsCreatedOrUpdated()
+  .Mutate(wa => {
+    // check if pending - if so pass through
+    const conditions = wa.Raw.status?.conditions || [];
+    if (conditions[conditions.length - 1]?.status === "Pending") {
+      return;
+    }
+    wa.SetAnnotation("pepr.dev/latest-admission-pass", new Date().toISOString());
+  })
+  .Validate(wa => {
+    // check if pending - if so pass through
+    const conditions = wa.Raw.status?.conditions || [];
+    if (conditions[conditions.length - 1]?.status === "Pending") {
+      return wa.Approve();
+    }
+
+    const { language, replicas, theme } = wa.Raw.spec;
+    const warnings: string[] = [];
+
+    if (!["english", "spanish"].includes(language)) {
+      warnings.push("language must be either 'english' or 'spanish'");
+    }
+    if (replicas < 1) {
+      warnings.push("replicas must be greater than 0");
+    }
+    if (!["dark", "light"].includes(theme)) {
+      warnings.push("theme must be either 'dark' or 'light'");
+    }
+
+    if (warnings.length > 0) {
+      return wa.Deny("Spec field is incorrect", 422, warnings);
+    }
+
+    return wa.Approve();
+  })
+```
+
+**Pod Admission Control** 
+```ts
+When(a.Pod)
+  .IsCreatedOrUpdated()
+  .Mutate(request => {
+    // Check if any containers defined in the pod do not have the `allowPrivilegeEscalation` field present. If not, include it and set to false.
+    for (const container of containers(request)) {
+      container.securityContext = container.securityContext || {};
+      const mutateCriteria = [
+        container.securityContext.allowPrivilegeEscalation === undefined,
+        !container.securityContext.privileged,
+        !container.securityContext.capabilities?.add?.includes("CAP_SYS_ADMIN"),
+      ];
+      // We are only mutating if the conditions above are all satisfied
+      if (mutateCriteria.every(priv => priv === true)) {
+        container.securityContext.allowPrivilegeEscalation = false;
+      }
+    }
+  })
+  .Validate(request => {
+    const violations = containers(request).filter(
+      // Checking if allowPrivilegeEscalation is undefined. If yes, fallback to true as the default behavior in k8s is to allow if undefined.
+      // Checks the three different ways a container could escalate to admin privs
+      c => (c.securityContext.allowPrivilegeEscalation ?? true) || c.securityContext.privileged,
+    );
+
+    if (violations.length) {
+      return request.Deny("Privilege escalation is disallowed", 403);
+    }
+
+    return request.Approve();
+  });
+```
 ## The GitOps Server
 
 The role of the GitOps server is to provide a declarative, ordered, deployment of our entire stack. We will achieve this by using the App of Apps pattern. This pattern is a way to manage multiple applications in ArgoCD. It allows you to define a parent application, that contains multiple child applications, which can be deployed in a given order. Since our Operator will be patching the status of the WebApp CR, we do not have to worry about the admission controller and GitOps server fighting over the same resources since Argo will ignore differences in resource status. We will clearly define the boundaries of the GitOps server and when it should reconcile. However, our admission controller will be creating annotations on the WebApp CR to indicate that it has been processed. To ensure we do not get into a circular reconciliation loop, we will use `ignoreDifferences` in the ArgoCD application spec to ignore the annotations added by the admission controller. This will allow the GitOps server to reconcile the WebApp CR without being affected by the admission controller.
