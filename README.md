@@ -51,7 +51,7 @@ This blog has 3 major concepts:
 We will use a Pepr operator for simplified, consistent WebApp deployment via a single configuration. An Admission Controller will enhance security by setting default security settings and preventing privileged pods. ArgoCD will manage the deployment and order of our webapp instances
 
 > [!NOTE]
-> You will need to fork this repo and clone it to your local machine. Make sure to replace all instances of `https://github.com/cmwylie19` your own repo. 
+> You will need to fork this repo and clone it to your local machine. Make sure to replace all instances of `https://github.com/defenseunicorns-labs` your own repo. 
 
 ## The Operator
 
